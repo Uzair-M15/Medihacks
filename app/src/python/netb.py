@@ -3,6 +3,7 @@ import socket
 import asyncio
 import json
 import subprocess
+import jdata
 
 ip_table = None
 PORT= 8008
@@ -38,11 +39,11 @@ class ConnectionHandler:
                 return i[1]
         raise Exception("Socket Object not found for address : {}".format(address))
 
-    def ServerSend(self,address , message):
+    def ServerSend(self,address , message:jdata.Message):
         msg = {
-            "type":"server_message",
-            "format":"txt",
-            "content":message,
+            "type":message.type,
+            "format":message.format,
+            "content":message.content,
             "to" : address,
             "from" : whatismyip()
         }
@@ -56,6 +57,7 @@ class ConnectionHandler:
         message = sock.recv(BUFFER_SIZE)
         message = message.decode()
         self.stream.append(message)
+        print(message)
 
         #handling input
         message = json.loads(message)
@@ -88,14 +90,14 @@ class ConnectionHandler:
     def Disconnect(self):
         self.client_sock.close()
     
-    def Send(self , address , message):
+    def Send(self , address , message:jdata.Message):
         if self.Connect(address)== 0:
             message = {
-                "type":"message" , 
-                "format" : "txt" ,
+                "type":message.type, 
+                "format" : message.format,
                 "to" : address , 
                 "from" : whatismyip(),
-                "content" : message
+                "content" : message.content
             }
             self.client_sock.send("")
         else:
