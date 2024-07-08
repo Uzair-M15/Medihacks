@@ -223,6 +223,6 @@ def whatismyhostname()->str:
             return i[1]
 
 def RunServices():
-    asyncio.run(getPeers)
+    asyncio.run(getPeers())
 
 RunServices()
