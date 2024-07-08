@@ -3,7 +3,7 @@ import socket
 import asyncio
 import json
 import subprocess
-import jdata
+from jdata import *
 
 ip_table = None
 PORT= 8008
@@ -39,7 +39,7 @@ class ConnectionHandler:
                 return i[1]
         raise Exception("Socket Object not found for address : {}".format(address))
 
-    def ServerSend(self,address , message:jdata.Message):
+    def ServerSend(self,address , message:Message):
         msg = {
             "type":message.type,
             "format":message.format,
@@ -90,7 +90,7 @@ class ConnectionHandler:
     def Disconnect(self):
         self.client_sock.close()
     
-    def Send(self , address , message:jdata.Message):
+    def Send(self , address , message:Message):
         if self.Connect(address)== 0:
             message = {
                 "type":message.type, 
