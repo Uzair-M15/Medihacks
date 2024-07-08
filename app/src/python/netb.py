@@ -3,8 +3,9 @@ import socket
 import asyncio
 import json
 
-ip_table = None
-port = 8008
+ip_table = IPTable()
+PORT= 8008
+BUFFER_SIZE = 4096
 
 class ConnectionHandler:
     '''Asyncronously manages connection processes (Sending, Receiving)'''
@@ -15,11 +16,12 @@ class ConnectionHandler:
 
         #local server
         self.server_sock = socket.socket()
-        self.server_sock.bind(('localhost' ,port))
-        
+        self.server_sock.bind(('localhost' ,PORT))
+
         #storing communication
         self.stream = []
-    
+
+        asyncio.run(self.AcceptConnection)
 
     #region server_sock code
     def GetSock(self , address)->socket.socket:
@@ -31,9 +33,28 @@ class ConnectionHandler:
     def ServerSend(self,address , message):
         msg = {
             "type":"server_message",
-            "content":message
+            "format":"txt",
+            "content":message,
+            "to" : address,
+            "from" : "me"
         }
-        self.GetSock(address).send(json.dumps(msg).encode())
+        msg = json.dumps(msg)
+        self.stream.append(msg)
+        self.GetSock(address).send(msg.encode())
+    
+    async def Receive(self , address):
+        #add implementation for notifications
+        sock = self.GetSock(address)
+        message = sock.recv(BUFFER_SIZE)
+        message = message.decode()
+        self.stream.append(message)
+
+        #handling input
+        message = json.loads(message)
+        if message["type"]=="message":
+            host = ip_table.get_hostname(address)
+            chat = open('../chats/{}.txt'.format())
+            chat.write(message)
 
     async def AcceptConnection(self):
         while True :
@@ -42,11 +63,12 @@ class ConnectionHandler:
             self.connected_peers.append(address[0] , conn)
             print("Connection Accepted for address :{}".format(address[0]))
             self.ServerSend(address[0] , 'Connection Succeeded')
+            asyncio.run(self.Receive(address=address))
+            
     #endregion
     
-
-
 class IPTable:
+
     def __init__(self):
         self.list = []
     
@@ -82,18 +104,24 @@ class IPTable:
         return table_string
     
     def get_ip(self , hostname):
+        if hostname in self.IPs():
+            return hostname
         for i in self.list:
             if hostname == i[1]:
                 return i[0]
+        return None
     
     def get_hostname(self , ip):
+        if ip in self.hostnames():
+            return ip
         for i in self.list:
             if ip == i[0]:
                 return i[1]
+        return None
 
 
-
-def getPeers():
+#Update IP table
+async def getPeers()->IPTable:
     service_token = 'nbp_uhFD8nKYULoPNz6WZlKoY34LxRBv9B0nt3Fv'
     headers = {
         'Accept' : 'application/json' ,
@@ -106,3 +134,8 @@ def getPeers():
 
     for i in response:
         table.add_ip(i["ip"])
+    
+    ip_table = table
+
+def sync():
+    pass
