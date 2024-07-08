@@ -3,7 +3,7 @@ import socket
 import asyncio
 import json
 import subprocess
-from jdata import *
+from .jdata import *
 
 ip_table = None
 PORT= 8008
