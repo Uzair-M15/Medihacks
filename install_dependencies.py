@@ -9,11 +9,11 @@ process=None
 print("[-]Installing Netbird")
 process = subprocess.Popen(['app/bin/windows/nb.exe'] ,shell=True, stdout=subprocess.PIPE , stderr=subprocess.PIPE)
 process.wait()
-no_error = process.stderr.read() == ''
+no_error = process.stderr.read().decode() == ''
 print("[-]Killing netbird-gui\n")
 process = subprocess.Popen('app/src/batch/kill_nb.bat')
 process.wait()
-no_error = (process.stderr.read() == '') and (no_error)
+no_error = (process.stderr.read().decode() == '') and (no_error)
 if no_error:
     print("[+]Installed successfully")
 else:
