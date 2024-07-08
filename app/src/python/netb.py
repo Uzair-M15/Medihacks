@@ -7,6 +7,7 @@ import subprocess
 ip_table = None
 PORT= 8008
 BUFFER_SIZE = 4096
+SERVICE_TOKEN = 'nbp_uhFD8nKYULoPNz6WZlKoY34LxRBv9B0nt3Fv'
 
 class ConnectionHandler:
     '''Asyncronously manages connection processes (Sending, Receiving)'''
@@ -68,7 +69,6 @@ class ConnectionHandler:
             conn,address = self.server_sock.accept()
             self.connected_peers.append(address[0] , conn)
             print("Connection Accepted for address :{}".format(address[0]))
-            self.ServerSend(address[0] , 'Connection Succeeded')
             asyncio.run(self.Receive(address=address))
             
     #endregion
@@ -107,9 +107,9 @@ class IPTable:
     def __init__(self):
         self.list = []
     
-    def add_address(self, ip : str , hostname:str):
+    def add_address(self, ip : str , hostname:str , id:str):
         if ip not in self.list:
-            self.list.append((ip , hostname))
+            self.list.append((ip , hostname , id))
         else:
             print("Address already exists. Ignoring")
 
@@ -157,25 +157,23 @@ class IPTable:
 
 #Update IP table
 async def getPeers()->IPTable:
-    service_token = 'nbp_uhFD8nKYULoPNz6WZlKoY34LxRBv9B0nt3Fv'
-    headers = {
-        'Accept' : 'application/json' ,
-        'Authorization': 'Token {}'.format(service_token)
-        }
-    response = requests.request('get' ,'https://api.netbird.io/api/peers' , headers=headers)
-    response=response.json()
-    #Make IP Table
-    table = IPTable()
+    while True:
+        headers = {
+            'Accept' : 'application/json' ,
+            'Authorization': 'Token {}'.format(SERVICE_TOKEN)
+            }
+        response = requests.request('get' ,'https://api.netbird.io/api/peers' , headers=headers)
+        response=response.json()
+        #Make IP Table
+        table = IPTable()
 
-    for i in response:
-        table.add_ip(i["ip"])
-    
-    ip_table = table
-
-def sync():
-    asyncio.run(getPeers())
+        for i in response:
+            table.add_address(i["ip"] , i["hostname"] , i["id"])
+        
+        ip_table = table
 
 def whoami()->str:
+    '''Returns the the users netbird ip address'''
     process = subprocess.Popen("netbird status" , shell=True , stdout=subprocess.PIPE , stderr = subprocess.PIPE)
     process.wait()
     output = process.stdout.read().decode()
@@ -191,6 +189,8 @@ def whoami()->str:
             ip = ip.strip()
             return ip
 
-print(whoami())
-    
+
+def RunServices():
+    asyncio.run(getPeers())
+    HandleConnections = ConnectionHandler()
     
