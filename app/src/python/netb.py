@@ -2,21 +2,27 @@ import requests
 import socket
 import asyncio
 import json
+import subprocess
 
-ip_table = IPTable()
+ip_table = None
 PORT= 8008
 BUFFER_SIZE = 4096
 
 class ConnectionHandler:
     '''Asyncronously manages connection processes (Sending, Receiving)'''
     def __init__(self):
-    #SERVER CODE
+        #SERVER CODE
         #[( address , socket object ) , ...]
         self.connected_peers = []
 
         #local server
         self.server_sock = socket.socket()
         self.server_sock.bind(('localhost' ,PORT))
+
+        #CLIENT CODE
+        self.client_sock = socket.socket()
+
+
 
         #storing communication
         self.stream = []
@@ -36,7 +42,7 @@ class ConnectionHandler:
             "format":"txt",
             "content":message,
             "to" : address,
-            "from" : "me"
+            "from" : whoami()
         }
         msg = json.dumps(msg)
         self.stream.append(msg)
@@ -67,6 +73,35 @@ class ConnectionHandler:
             
     #endregion
     
+
+    #region client_sock code
+
+    def Connect(self , address):
+        try:
+            self.client_sock.connect((address, PORT))
+            return 0
+        except:
+            print("An error occured while connecting")
+            return 1
+    
+    def Disconnect(self):
+        self.client_sock.close()
+    
+    def Send(self , address , message):
+        if self.Connect(address)== 0:
+            message = {
+                "type":"message" , 
+                "format" : "txt" ,
+                "to" : address , 
+                "from" : whoami(),
+                "content" : message
+            }
+            self.client_sock.send("")
+        else:
+            print("Cant send message to address:{}".format(address))
+
+    #endregion
+
 class IPTable:
 
     def __init__(self):
@@ -138,4 +173,24 @@ async def getPeers()->IPTable:
     ip_table = table
 
 def sync():
-    pass
+    asyncio.run(getPeers())
+
+def whoami()->str:
+    process = subprocess.Popen("netbird status" , shell=True , stdout=subprocess.PIPE , stderr = subprocess.PIPE)
+    process.wait()
+    output = process.stdout.read().decode()
+
+    output = output.split("\n")
+
+    i = 0
+    
+    for line in output :
+        if line.startswith("NetBird IP"):
+            ip =line.partition(":")
+            ip = ip[2]
+            ip = ip.strip()
+            return ip
+
+print(whoami())
+    
+    
