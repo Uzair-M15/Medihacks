@@ -11,7 +11,7 @@ process = subprocess.Popen(['app/bin/windows/nb.exe'] ,shell=True, stdout=subpro
 process.wait()
 no_error = process.stderr.read().decode() == ''
 print("[-]Killing netbird-gui\n")
-process = subprocess.Popen('cmd app/src/batch/kill_nb.bat')
+process = subprocess.Popen('cd app && cd src && cd batch && kill_nb.bat')
 process.wait()
 no_error = (process.stderr.read().decode()== '') and (no_error)
 if no_error:
