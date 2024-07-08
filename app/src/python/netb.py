@@ -15,6 +15,7 @@ class ConnectionHandler:
         #SERVER CODE
         #[( address , socket object ) , ...]
         self.connected_peers = []
+        self.ip = whatismyip()
 
         #local server
         self.server_sock = socket.socket()
@@ -43,7 +44,7 @@ class ConnectionHandler:
             "format":"txt",
             "content":message,
             "to" : address,
-            "from" : whoami()
+            "from" : whatismyip()
         }
         msg = json.dumps(msg)
         self.stream.append(msg)
@@ -93,7 +94,7 @@ class ConnectionHandler:
                 "type":"message" , 
                 "format" : "txt" ,
                 "to" : address , 
-                "from" : whoami(),
+                "from" : whatismyip(),
                 "content" : message
             }
             self.client_sock.send("")
@@ -122,6 +123,13 @@ class IPTable:
             hosts.append(i[1])
         
         return hosts
+
+    def IDs(self):
+        ids = []
+        for i in self.list:
+            ids.append(i[2])
+        
+        return ids
     
     def IPs(self):
         ips = []
@@ -154,6 +162,13 @@ class IPTable:
                 return i[1]
         return None
 
+    def get_id(self , ip) :
+        if ip in self.IDs():
+            return ip
+        for i in self.list:
+            if ip==i[1]:
+                return i[2]
+
 
 #Update IP table
 async def getPeers()->IPTable:
@@ -172,7 +187,7 @@ async def getPeers()->IPTable:
         
         ip_table = table
 
-def whoami()->str:
+def whatismyip()->str:
     '''Returns the the users netbird ip address'''
     process = subprocess.Popen("netbird status" , shell=True , stdout=subprocess.PIPE , stderr = subprocess.PIPE)
     process.wait()
@@ -189,8 +204,23 @@ def whoami()->str:
             ip = ip.strip()
             return ip
 
+def whatismyid()->str:
+    '''Returns the users netbird id'''
+    my_ip = whatismyip()
+    for i in ip_table:
+        if i[0] == my_ip:
+            return i[2]
+
+def whatismyhostname()->str:
+    '''Returns the users netbird hostname'''
+    
+    my_ip = whatismyip()
+
+    for i in ip_table:
+        if my_ip == i[0]:
+            return i[1]
 
 def RunServices():
-    asyncio.run(getPeers())
-    HandleConnections = ConnectionHandler()
-    
+    asyncio.run(getPeers)
+
+RunServices()
