@@ -169,7 +169,7 @@ class ConnectionHandler:
         while True :
             self.server_sock.listen()
             conn,address = self.server_sock.accept()
-            self.connected_peers.append(address[0] , conn)
+            self.connected_peers.append((address[0] , conn))
             print("Connection Accepted for address :{}".format(address[0]))
             self.Receive(address=address)
 
@@ -191,13 +191,6 @@ class ConnectionHandler:
     def Send(self , address , message):
         try:
             if self.Connect(address)== 0:
-                message = {
-                    "type":message.type, 
-                    "format" : message.format,
-                    "to" : address , 
-                    "from" : self.whatismyip(),
-                    "content" : message.content
-                }
                 self.client_sock.send(message.to_str())
             else:
                 print("Cant send message to address:{}".format(address))
