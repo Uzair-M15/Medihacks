@@ -191,16 +191,16 @@ class ConnectionHandler:
     def Send(self , address , message):
         try:
             if self.Connect(address)== 0:
-                self.client_sock.send(message.to_str())
+                self.client_sock.send(message.to_string())
             else:
                 print("Cant send message to address:{}".format(address))
         except:
-            raise "Message might not be a valid jdata.Message object. Cancelling"
+            raise Exception("Message might not be a valid jdata.Message object. Cancelling")
 
     #endregion
 
     def ProcessRunner(self):
-        print('Child process started with id:{}'.format(os.getpid()))
+        print('\nChild process started with id:{}'.format(os.getpid()))
         print("This process' Parent id :{}".format(os.getppid()))
         while True:
             self.getPeers()
@@ -247,7 +247,6 @@ class ConnectionHandler:
         '''Returns the users netbird id. Requires refresh_table process to be running. Call RunService() to start the process'''
         try:
             my_ip = self.whatismyip()
-            self.getPeers()
             for i in self.ip_table.list:
                 if i[0] == my_ip:
                     return i[2]
@@ -258,7 +257,6 @@ class ConnectionHandler:
         '''Returns the users netbird hostname'''
         try:        
                 my_ip = self.whatismyip()
-                self.getPeers()
                 for i in self.ip_table.list:
                     if my_ip == i[0]:
                         return i[1]
