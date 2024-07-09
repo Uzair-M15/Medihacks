@@ -1,6 +1,6 @@
 import requests
 import socket
-import asyncio
+import threading
 import json
 import subprocess
 from .jdata import *
@@ -21,6 +21,7 @@ class ConnectionHandler:
         #local server
         self.server_sock = socket.socket()
         self.server_sock.bind(('localhost' ,PORT))
+        self.max_connections = 50
 
         #CLIENT CODE
         self.client_sock = socket.socket()
@@ -30,7 +31,8 @@ class ConnectionHandler:
         #storing communication
         self.stream = []
 
-        asyncio.run(self.AcceptConnection)
+        accept_thread = threading.Thread(target = self.AcceptConnection())
+        accept_thread.start()
 
     #region server_sock code
     def GetSock(self , address)->socket.socket:
@@ -51,7 +53,7 @@ class ConnectionHandler:
         self.stream.append(msg)
         self.GetSock(address).send(msg.encode())
     
-    async def Receive(self , address):
+    def Receive(self , address):
         #add implementation for notifications
         sock = self.GetSock(address)
         message = sock.recv(BUFFER_SIZE)
@@ -66,13 +68,16 @@ class ConnectionHandler:
             chat = open('../chats/{}.txt'.format())
             chat.write(message)
 
-    async def AcceptConnection(self):
+    def AcceptConnection(self):
+        
         while True :
-            self.server_sock.listen()
-            conn,address = self.server_sock.accept()
-            self.connected_peers.append(address[0] , conn)
-            print("Connection Accepted for address :{}".format(address[0]))
-            asyncio.run(self.Receive(address=address))
+            if len(self.connected_peers) < self.max_connections :
+                self.server_sock.listen()
+                conn,address = self.server_sock.accept()
+                self.connected_peers.append(address[0] , conn)
+                print("Connection Accepted for address :{}".format(address[0]))
+                receiver_thread = threading.Thread(target = self.Receive() ,args=address , name='netb_receiver_thread')
+                receiver_thread.start()
             
     #endregion
     
@@ -173,7 +178,7 @@ class IPTable:
 
 
 #Update IP table
-async def getPeers()->IPTable:
+def getPeers()->IPTable:
     while True:
         headers = {
             'Accept' : 'application/json' ,
@@ -223,4 +228,5 @@ def whatismyhostname()->str:
             return i[1]
 
 def RunServices():
-    asyncio.run(getPeers())
+    refresh_table = threading.Thread(target=getPeers() , name = "netb_peer_refresh")
+    refresh_table.start()

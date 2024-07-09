@@ -4,7 +4,6 @@ from app.src.python.jdata import *
 
 
 #Initialise
-RunServices()
 handler = ConnectionHandler()
 
 #Send a message to uzair
