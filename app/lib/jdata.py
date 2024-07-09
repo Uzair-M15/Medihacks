@@ -1,5 +1,11 @@
 import json
 
+#region The magic code
+import sys
+import os
+sys.path.insert(0, '{}/../../../'.format(os.getcwd()))
+#endregion
+
 class Message :
     def __init__(self , type , format , content):
         self.type = type
