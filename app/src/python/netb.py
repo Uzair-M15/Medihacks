@@ -176,7 +176,7 @@ class ConnectionHandler:
             conn,address = self.server_sock.accept()
             self.connected_peers.append((address[0] , conn))
             print("Connection Accepted for address :{}".format(address[0]))
-            self.Receive(address=address)
+            self.Receive(address=address[0])
 
     #endregion
     
