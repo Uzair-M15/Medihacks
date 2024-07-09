@@ -5,6 +5,7 @@ from multiprocessing import Process
 import json
 import subprocess
 import asyncio
+import os
 
 
 
@@ -114,7 +115,7 @@ class ConnectionHandler:
         #storing communication
         self.stream = []
 
-        handler_process = Process()
+        handler_process = Process(target=self.ProcessRunner)
         handler_process.daemon = True
         handler_process.start()
 
@@ -189,7 +190,7 @@ class ConnectionHandler:
                     "type":message.type, 
                     "format" : message.format,
                     "to" : address , 
-                    "from" : whatismyip(),
+                    "from" : self.whatismyip(),
                     "content" : message.content
                 }
                 self.client_sock.send("")
@@ -201,6 +202,8 @@ class ConnectionHandler:
     #endregion
 
     def ProcessRunner(self):
+        print('Child process started with id:{}'.format(os.getpid()))
+        print("This process' Parent id :{}".format(os.getppid()))
         while True:
             self.getPeers()
             asyncio.run(self.AcceptConnection())
@@ -219,9 +222,9 @@ class ConnectionHandler:
         for i in response:
             table.add_address(i["ip"] , i["hostname"] , i["id"])
         
-        if self.ip_table.list != table :
+        if self.ip_table.list != table.list :
             self.ip_table = table
-            print("[=] Update to IP Table :\n"+self.ip_table)
+            print("[=] Update to IP Table :\n"+self.ip_table.__str__())
 
     def whatismyip(self)->str:
         '''Returns the the users netbird ip address'''
@@ -246,6 +249,7 @@ class ConnectionHandler:
         '''Returns the users netbird id. Requires refresh_table process to be running. Call RunService() to start the process'''
         try:
             my_ip = self.whatismyip()
+            self.getPeers()
             for i in self.ip_table.list:
                 if i[0] == my_ip:
                     return i[2]
@@ -256,7 +260,7 @@ class ConnectionHandler:
         '''Returns the users netbird hostname'''
         try:        
                 my_ip = self.whatismyip()
-
+                self.getPeers()
                 for i in self.ip_table.list:
                     if my_ip == i[0]:
                         return i[1]
