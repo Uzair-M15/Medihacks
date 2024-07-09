@@ -1,9 +1,7 @@
 import json
-
 #region The magic code
 import sys
 import os
-sys.path.insert(0, '{}/../../../'.format(os.getcwd()))
 #endregion
 
 class Message :
@@ -12,12 +10,15 @@ class Message :
         self.format = format
         self.content = content
     
-    def to_json(self):
+    def to_json(self)->json:
         return {
             "type" : self.type ,
             "format" : self.format,
             "content" : self.content
         }
+
+    def to_string(self)->str:
+        self.to_json().dumps()
     
 class Text_Message(Message):
     def __init__(self , content):

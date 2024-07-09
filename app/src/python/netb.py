@@ -147,11 +147,15 @@ class ConnectionHandler:
     
     def Receive(self , address):
         #add implementation for notifications
+        print("Preparing to receive message from {}".format(address))
         sock = self.GetSock(address)
-        message = sock.recv(BUFFER_SIZE)
-        message = message.decode()
-        self.stream.append(message)
-        print(message)
+        if sock != None:
+            message = sock.recv(BUFFER_SIZE)
+            message = message.decode()
+            self.stream.append(message)
+            print(message)
+        else:
+            print("Socket for {} not found. Message was not received!".format(address))
 
         #handling input
         message = json.loads(message)
@@ -159,14 +163,15 @@ class ConnectionHandler:
             host = ip_table.get_hostname(address)
             chat = open('../chats/{}.txt'.format())
             chat.write(message)
+            chat.close()
 
     async def AcceptConnection(self):
-        
         while True :
             self.server_sock.listen()
             conn,address = self.server_sock.accept()
             self.connected_peers.append(address[0] , conn)
             print("Connection Accepted for address :{}".format(address[0]))
+            self.Receive(address=address)
 
     #endregion
     
@@ -176,8 +181,8 @@ class ConnectionHandler:
         try:
             self.client_sock.connect((address, PORT))
             return 0
-        except:
-            print("An error occured while connecting")
+        except Exception as e:
+            print("An error occured while connecting with message :",e)
             return 1
     
     def Disconnect(self):
@@ -193,7 +198,7 @@ class ConnectionHandler:
                     "from" : self.whatismyip(),
                     "content" : message.content
                 }
-                self.client_sock.send("")
+                self.client_sock.send(message.to_str())
             else:
                 print("Cant send message to address:{}".format(address))
         except:
