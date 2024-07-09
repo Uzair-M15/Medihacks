@@ -101,7 +101,7 @@ class ConnectionHandler:
 
         #local server
         self.server_sock = socket.socket()
-        self.server_sock.bind(('localhost' ,PORT))
+        self.server_sock.bind(( self.whatismyip ,PORT))
         self.max_connections = 50
 
 
