@@ -160,14 +160,15 @@ class ConnectionHandler:
             print(message)
         else:
             print("Socket for {} not found. Message was not received!".format(address))
-
-        #handling input
-        message = json.loads(message)
-        if message["type"]=="message":
-            host = ip_table.get_hostname(address)
-            chat = open('../chats/{}.txt'.format())
-            chat.write(message)
-            chat.close()
+        
+        if message != "":
+            #handling input
+            message = json.loads(message)
+            if message["type"]=="message":
+                host = ip_table.get_hostname(address)
+                chat = open('../chats/{}.txt'.format())
+                chat.write(message)
+                chat.close()
 
     async def AcceptConnection(self):
         while True :
@@ -195,7 +196,7 @@ class ConnectionHandler:
     def Send(self , address , message):
         try:
             if self.Connect(address)== 0:
-                self.client_sock.send(message.to_string())
+                self.client_sock.send(message.to_string().encode())
             else:
                 print("Cant send message to address:{}".format(address))
         except:
