@@ -1,9 +1,9 @@
 import requests
 import socket
-import threading
+from multiprocessing import Process
 import json
 import subprocess
-from .jdata import *
+import app.lib.jdata as jdata
 
 ip_table = None
 PORT= 8008
@@ -31,7 +31,7 @@ class ConnectionHandler:
         #storing communication
         self.stream = []
 
-        accept_thread = threading.Thread(target = self.AcceptConnection())
+        accept_thread = Process(target = self.AcceptConnection())
         accept_thread.start()
 
     #region server_sock code
@@ -41,7 +41,7 @@ class ConnectionHandler:
                 return i[1]
         raise Exception("Socket Object not found for address : {}".format(address))
 
-    def ServerSend(self,address , message:Message):
+    def ServerSend(self,address , message:jdata.Message):
         msg = {
             "type":message.type,
             "format":message.format,
@@ -76,7 +76,7 @@ class ConnectionHandler:
                 conn,address = self.server_sock.accept()
                 self.connected_peers.append(address[0] , conn)
                 print("Connection Accepted for address :{}".format(address[0]))
-                receiver_thread = threading.Thread(target = self.Receive() ,args=address , name='netb_receiver_thread')
+                receiver_thread = Process(target = self.Receive() ,args=(address,) , name='netb_receiver_thread')
                 receiver_thread.start()
             
     #endregion
@@ -95,7 +95,7 @@ class ConnectionHandler:
     def Disconnect(self):
         self.client_sock.close()
     
-    def Send(self , address , message:Message):
+    def Send(self , address , message:jdata.Message):
         if self.Connect(address)== 0:
             message = {
                 "type":message.type, 
@@ -228,5 +228,5 @@ def whatismyhostname()->str:
             return i[1]
 
 def RunServices():
-    refresh_table = threading.Thread(target=getPeers() , name = "netb_peer_refresh")
+    refresh_table = Process(target=getPeers() , name = "netb_peer_refresh")
     refresh_table.start()

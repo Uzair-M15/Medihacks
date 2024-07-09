@@ -1,6 +1,6 @@
 import app.src.python.netb as nb
 from app.src.python.settings import *
-from app.src.python.jdata import *
+from app.lib.jdata import *
 
 nb.RunServices()
 handler = nb.ConnectionHandler()

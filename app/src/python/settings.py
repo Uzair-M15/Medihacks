@@ -1,4 +1,4 @@
-from .jdata import *
+from ...lib.jdata import *
 from .netb import *
 import requests
 
