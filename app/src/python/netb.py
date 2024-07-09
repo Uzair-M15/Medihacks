@@ -34,6 +34,10 @@ class IPTable:
 
     def get_list(self):
         return self.list
+    
+    def set_list(self , other : list):
+        '''This method should only be used by the netb getPeer method. Turn back. Using it could break EVERYTHING'''
+        self.list = other
 
     def hostnames(self):
         hosts = []
@@ -208,6 +212,9 @@ class ConnectionHandler:
 
     #Update IP table
     def getPeers(self)->IPTable:
+        '''Refreshes the ConnectionHandler.ip_table . 
+        \n[!]It should not be called by anything other than the ProcessRunner process. 
+        \nCalling it has no effect at all but it would be redundant'''
         headers = {
             'Accept' : 'application/json' ,
             'Authorization': 'Token {}'.format(SERVICE_TOKEN)
@@ -220,9 +227,8 @@ class ConnectionHandler:
         for i in response:
             table.add_address(i["ip"] , i["hostname"] , i["id"])
         
-        if self.ip_table.list != table.list :
-            self.ip_table = table
-            print("[=] Update to IP Table :\n"+self.ip_table.__str__())
+        self.ip_table.set_list(table.list)
+        print("[=] Update to IP Table :\n"+self.ip_table.__str__())
 
     def whatismyip(self)->str:
         '''Returns the the users netbird ip address'''

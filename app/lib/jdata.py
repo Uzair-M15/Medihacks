@@ -18,7 +18,7 @@ class Message :
         }
 
     def to_string(self)->str:
-        self.to_json().dumps()
+        return json.dumps(self.to_json())
     
 class Text_Message(Message):
     def __init__(self , content):
