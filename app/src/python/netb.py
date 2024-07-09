@@ -246,7 +246,7 @@ class ConnectionHandler:
         '''Returns the users netbird id. Requires refresh_table process to be running. Call RunService() to start the process'''
         try:
             my_ip = self.whatismyip()
-            for i in self.ip_table:
+            for i in self.ip_table.list:
                 if i[0] == my_ip:
                     return i[2]
         except :
@@ -257,7 +257,7 @@ class ConnectionHandler:
         try:        
                 my_ip = self.whatismyip()
 
-                for i in self.ip_table:
+                for i in self.ip_table.list:
                     if my_ip == i[0]:
                         return i[1]
         except :
