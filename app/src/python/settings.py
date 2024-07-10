@@ -9,7 +9,7 @@ def CommitSettings():
     #Settings to update
     payload = f
 
-    id = whatismyid()
+    id = ConnectionHandler.whatismyid()
 
     url = "https://api.netbird.io/api/peers/{}".format(id)
     headers = {

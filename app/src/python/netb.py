@@ -1,11 +1,12 @@
 
 import requests
 import socket
-from multiprocessing import Process
+from multiprocessing import Process , Array
 import json
-import subprocess
 import asyncio
 import os
+import pickle
+import subprocess
 
 
 
@@ -99,7 +100,7 @@ class IPTable:
 class ConnectionHandler:
     '''Asyncronously manages connection processes (Sending, Receiving)'''
     def __init__(self):
-
+        
         #SERVER CODE
         #[( address , socket object ) , ...]
         self.connected_peers = []
@@ -130,22 +131,37 @@ class ConnectionHandler:
         self.parent_process_sock = socket.socket()
         self.child_process_sock = socket.socket()
         self.parent_process_sock.bind(('localhost' , 8009))
-        asyncio.run(self.parent_process_get_ip_table())
+        asyncio.run(self.parent_sync_parent_variables())
     
-    async def parent_process_get_ip_table(self):
+
+
+
+
+
+
+
+
+    async def parent_sync_parent_variables(self):
+        '''Syncs variables betwee spawned child process and parent process.\n Allows data transmission between parent and child'''
         self.parent_process_sock.listen()
         conn , address = self.parent_process_sock.accept()
         message = conn.recv(BUFFER_SIZE).decode()
         message = message.split("\n")
+        update_to = message[0]
         message.pop(0)
 
         i = 0
-        for line in message:
-            split_line = line.split(":")
-            message[i] = (split_line[0] , split_line[1] , split_line[2])
-            i = i + 1
-        
-        self.ip_table.set_list(message)
+        if update_to == "ip_table":
+            for line in message:
+                split_line = line.split(":")
+                message[i] = (split_line[0] , split_line[1] , split_line[2])
+                i = i + 1
+            
+            self.ip_table.set_list(message)
+        elif update_to == "stream":
+            self.stream.append(message[0])
+
+
 
     #region server_sock code
     def GetSock(self , address)->socket.socket|None:
@@ -157,6 +173,14 @@ class ConnectionHandler:
             if i[0] == address:
                 return i[1]
         return None
+
+
+
+
+
+
+
+
 
     def ServerSend(self,address , message):
         try:
@@ -173,59 +197,101 @@ class ConnectionHandler:
         except :
             raise "Message might not be a valid jdata.Message object. Cancelling"
     
-    def Receive(self , address):
+
+
+
+
+
+
+
+
+    def Receive(self , address , sock):
         #add implementation for notifications
         print("Preparing to receive message from {}".format(address))
-        sock = self.GetSock(address)
-        if sock != None:
-            message = sock.recv(BUFFER_SIZE)
-            message = message.decode()
-            self.stream.append(message)
-            print(message)
-        else:
-            print("Socket for {} not found. Message was not received!".format(address))
+        message = sock.recv(BUFFER_SIZE)
+        message = message.decode()
+        
+        #Transmit data from child to parent
+        self.child_process_sock = socket.socket()
+        self.child_process_sock.connect(('localhost' , 8009))
+        self.child_process_sock.send(("stream\n"+message).encode())
+        self.child_process_sock.close()
         
         if message != "":
             #handling input
             message = json.loads(message)
             if message["type"]=="message":
                 host = self.ip_table.get_hostname(address)
-                chat = open('../chats/{}.txt'.format())
-                chat.write(message)
-                chat.close()
+                try:
+                    chat = open('app/chats/{}.txt'.format(host) , "a")
+                    chat.write(str(message))
+                    chat.close()
+                except FileNotFoundError :
+                    chat = open('app/chats/{}.txt'.format(host) , 'x')
+                    chat.close()
+                    chat = open('app/chats/{}.txt'.format(host) , 'a')
+                    chat.write(str(message))
+                    chat.close()
+
+
+
+
+
+
 
     async def AcceptConnection(self):
+        print("Starting Connect Acceptions")
+        #Implement IP Blocking
         while True :
             self.server_sock.listen()
             conn,address = self.server_sock.accept()
-            self.connected_peers.append((address[0] , conn))
+            
             print("Connection Accepted for address :{}".format(address[0]))
-            self.Receive(address=address[0])
+            self.Receive(address=address[0] , sock = conn)
 
     #endregion
+    
     #region client_sock code
 
     def Connect(self , address):
+        '''Connects to an address. Should not be called. The Send method handles connection'''
         try:
             self.client_sock.connect((address, PORT))
+            print("Connected to peer")
             return 0
         except Exception as e:
-            print("An error occured while connecting with message :",e)
-            return 1
+            return 0
     
-    def Disconnect(self):
-        self.client_sock.close()
-    
+
+
+
+
+
+
     def Send(self , address , message):
+        print("Trying to send message:{}".format(message.to_string()))
         try:
-            if self.Connect(address)== 0:
-                self.client_sock.send(message.to_string().encode())
-            else:
-                print("Cant send message to address:{}".format(address))
+            self.client_sock = socket.socket()
+            self.Connect(address=address)
+            self.client_sock.send(message.to_string().encode())
+            #if self.client_sock.recv(BUFFER_SIZE).decode() == message.to_string():
+            self.client_sock.close()
+
+            #else:
+             #   print("Cant send message to address:{}".format(address))
+              #  print("Possible Error due to existing connection. Message will not be sent and transmission socket will be closed")
+               # self.client_sock.close()
         except:
             raise Exception("Message might not be a valid jdata.Message object. Cancelling")
 
     #endregion
+
+
+
+
+
+
+
 
     def ProcessRunner(self):
         print('\nChild process started with id:{}'.format(os.getpid()))
@@ -233,6 +299,13 @@ class ConnectionHandler:
         while True:
             self.getPeers()
             asyncio.run(self.AcceptConnection())
+
+
+
+
+
+
+
 
     #Update IP table
     def getPeers(self)->IPTable:
@@ -253,9 +326,16 @@ class ConnectionHandler:
         
         self.ip_table.set_list(table.list)
         self.client_sock.connect(('localhost' , 8009))
-        self.client_sock.send(self.ip_table.__str__().encode())
+        self.client_sock.send(("ip_table"+self.ip_table.__str__()).encode())
         self.client_sock.close()
         print("[=] Update to IP Table :\n"+self.ip_table.__str__())
+
+
+
+
+
+
+
 
     def whatismyip(self)->str:
         '''Returns the the users netbird ip address'''
@@ -276,6 +356,11 @@ class ConnectionHandler:
         ip = ip.partition("/")
         return ip[0]
 
+
+
+
+
+
     def whatismyid(self)->str:
         '''Returns the users netbird id. Requires refresh_table process to be running. Call RunService() to start the process'''
         try:
@@ -285,6 +370,12 @@ class ConnectionHandler:
                     return i[2]
         except :
             raise "Failed! Check if refresh_table process is running. If not call RunService()"
+
+
+
+
+
+
 
     def whatismyhostname(self)->str:
         '''Returns the users netbird hostname'''
