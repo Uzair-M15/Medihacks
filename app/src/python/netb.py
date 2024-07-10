@@ -37,7 +37,9 @@ class IPTable:
     
     def set_list(self , other : list):
         '''This method should only be used by the netb getPeer method. Turn back. Using it could break EVERYTHING'''
-        self.list = other
+        self.list = []
+        for i in other :
+            self.list.append(i)
 
     def hostnames(self):
         hosts = []
@@ -64,7 +66,7 @@ class IPTable:
     def __str__(self):
         table_string = ''
         for i in self.list:
-            table_string = table_string + '\n' + i[0] + ':' + i[1]
+            table_string = table_string + '\n' + i[0] + ':' + i[1] +':'+ i[2]
         
         return table_string
     
@@ -88,7 +90,7 @@ class IPTable:
         if ip in self.IDs():
             return ip
         for i in self.list:
-            if ip==i[1]:
+            if ip==i[0]:
                 return i[2]
 
 
@@ -97,6 +99,7 @@ class IPTable:
 class ConnectionHandler:
     '''Asyncronously manages connection processes (Sending, Receiving)'''
     def __init__(self):
+
         #SERVER CODE
         #[( address , socket object ) , ...]
         self.connected_peers = []
@@ -122,6 +125,27 @@ class ConnectionHandler:
         handler_process = Process(target=self.ProcessRunner)
         handler_process.daemon = True
         handler_process.start()
+
+        #used for communicating between processes
+        self.parent_process_sock = socket.socket()
+        self.child_process_sock = socket.socket()
+        self.parent_process_sock.bind(('localhost' , 8009))
+        asyncio.run(self.parent_process_get_ip_table())
+    
+    async def parent_process_get_ip_table(self):
+        self.parent_process_sock.listen()
+        conn , address = self.parent_process_sock.accept()
+        message = conn.recv(BUFFER_SIZE).decode()
+        message = message.split("\n")
+        message.pop(0)
+
+        i = 0
+        for line in message:
+            split_line = line.split(":")
+            message[i] = (split_line[0] , split_line[1] , split_line[2])
+            i = i + 1
+        
+        self.ip_table.set_list(message)
 
     #region server_sock code
     def GetSock(self , address)->socket.socket|None:
@@ -165,7 +189,7 @@ class ConnectionHandler:
             #handling input
             message = json.loads(message)
             if message["type"]=="message":
-                host = ip_table.get_hostname(address)
+                host = self.ip_table.get_hostname(address)
                 chat = open('../chats/{}.txt'.format())
                 chat.write(message)
                 chat.close()
@@ -179,7 +203,6 @@ class ConnectionHandler:
             self.Receive(address=address[0])
 
     #endregion
-    
     #region client_sock code
 
     def Connect(self , address):
@@ -229,6 +252,9 @@ class ConnectionHandler:
             table.add_address(i["ip"] , i["hostname"] , i["id"])
         
         self.ip_table.set_list(table.list)
+        self.client_sock.connect(('localhost' , 8009))
+        self.client_sock.send(self.ip_table.__str__().encode())
+        self.client_sock.close()
         print("[=] Update to IP Table :\n"+self.ip_table.__str__())
 
     def whatismyip(self)->str:
