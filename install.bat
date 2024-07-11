@@ -40,3 +40,4 @@ netbird up --setup-key 0CC7033D-AC5F-482F-AEE1-4CD683CB6F3D
 cls
 echo [+]Complete
 cd ..
+cd ..
