@@ -1,12 +1,12 @@
 
 import requests
 import socket
-from multiprocessing import Process , Array
+from multiprocessing import Process
 import json
 import asyncio
 import os
-import pickle
 import subprocess
+from platform import system
 
 
 
@@ -123,15 +123,40 @@ class ConnectionHandler:
         #storing communication
         self.stream = []
 
-        handler_process = Process(target=self.ProcessRunner)
-        handler_process.daemon = True
-        handler_process.start()
+        self.handler_process = Process(target=self.ProcessRunner)
+        self.handler_process.daemon = True
+        self.handler_process.start()
 
         #used for communicating between processes
         self.parent_process_sock = socket.socket()
         self.child_process_sock = socket.socket()
         self.parent_process_sock.bind(('localhost' , 8009))
         asyncio.run(self.parent_sync_parent_variables())
+
+        try :
+            f = open("app/user/prev_session" , "r")
+            prev_ip_table = f.readlines()
+            if len(prev_ip_table) != 0:
+                for entry in prev_ip_table :
+                    values = entry.split(":")
+                    prev_sessions_hostname = values[1]
+                    prev_sessions_ip = values[1]
+                    for item in self.ip_table.list :
+                        if item[0] == prev_sessions_ip and item[1] != prev_sessions_hostname:
+                            try :
+                                os_name = system()
+                                os.rename(f"app/chats/{prev_sessions_hostname}" , f"app/chats/{item[1]}")
+                                if os_name == 'Windows':
+                                    subprocess.Popen(f"ren app/chats/{item[1]}/{prev_sessions_hostname}.txt {item[1]}.txt" , shell=True)
+                                elif os_name == 'Linux':
+                                    subprocess.Popen(f"mv app/chats/{item[1]}/{prev_sessions_hostname}.txt app/chats/{item[1]}/{item[1]}.txt" , shell= True)  
+                            except:
+                                pass
+
+        except FileNotFoundError:
+            f = open("app/user/prev_session" , "x")
+            f.close()
+
     
 
 
@@ -223,16 +248,26 @@ class ConnectionHandler:
             if message["type"]=="message":
                 host = self.ip_table.get_hostname(address)
                 try:
-                    chat = open('app/chats/{}.txt'.format(host) , "a")
+                    chat = open(f'app/chats/{host}/{host}.txt' , "a")
                     chat.write(str(message))
                     chat.close()
                 except FileNotFoundError :
-                    chat = open('app/chats/{}.txt'.format(host) , 'x')
+                    chat = open(f'app/chats/{host}/{host}.txt' , 'x')
                     chat.close()
-                    chat = open('app/chats/{}.txt'.format(host) , 'a')
+                    chat = open(f'app/chats/{host}/{host}.txt' , 'a')
                     chat.write(str(message))
                     chat.close()
-
+            if message["type"] == "host_update_message":
+                old_host = message["content"].split(":")[0]
+                new_host = message["content"].split(":")[1]
+                try :
+                    os_name = system()
+                    if os_name == 'Windows':
+                        subprocess.Popen(f"ren app/chats/{old_host}.txt {new_host}.txt" , shell=True)
+                    elif os_name == 'Linux':
+                        subprocess.Popen(f"mv app/chats/{old_host}.txt app/chats/{new_host}.txt" , shell= True)        
+                except: 
+                    pass
 
 
 
@@ -277,6 +312,19 @@ class ConnectionHandler:
             #if self.client_sock.recv(BUFFER_SIZE).decode() == message.to_string():
             self.client_sock.close()
 
+
+            try:
+                host = self.ip_table.get_hostname(address)
+                me = self.whatismyhostname()
+                chat = open(f'app/chats/{host}/{me}.txt' , "a")
+                chat.write(str(message))
+                chat.close()
+            except FileNotFoundError :
+                chat = open(f'app/chats/{host}/{me}.txt' , 'x')
+                chat.close()
+                chat = open(f'app/chats/{host}/{me}.txt' , 'a')
+                chat.write(str(message))
+                chat.close()
             #else:
              #   print("Cant send message to address:{}".format(address))
               #  print("Possible Error due to existing connection. Message will not be sent and transmission socket will be closed")
@@ -311,7 +359,7 @@ class ConnectionHandler:
     def getPeers(self)->IPTable:
         '''Refreshes the ConnectionHandler.ip_table . 
         \n[!]It should not be called by anything other than the ProcessRunner process. 
-        \nCalling it has no effect at all but it would be redundant'''
+        \nCalling it might have no effect at all but it would be redundant (in a best case scenario) and may result in unexpected or incorrect output'''
         headers = {
             'Accept' : 'application/json' ,
             'Authorization': 'Token {}'.format(SERVICE_TOKEN)
@@ -329,6 +377,18 @@ class ConnectionHandler:
         self.client_sock.send(("ip_table"+self.ip_table.__str__()).encode())
         self.client_sock.close()
         print("[=] Update to IP Table :\n"+self.ip_table.__str__())
+
+        f = open('app/user/prev_session' , 'w')
+        f.write("")
+        f.close
+
+        for i in self.ip_table.list :
+            try :
+                f = open("app/user/prev_session" , 'a')
+                f.write(f"{i[0]}:{i[1]}:{i[2]}")
+                f.close()
+            except FileNotFoundError :
+                pass
 
 
 
@@ -388,6 +448,85 @@ class ConnectionHandler:
             raise "Failed! Check if refresh_table is running. If not call RunService()"
 
 
+
+
+
+
+
+
+    def CommitSettings(self):
+        '''Edit json to support payload'''
+        #broadcast update
+
+        file='app/user/user_settings.json'
+        f = open(file , 'r')
+
+        hostname_changed = json.load(f)["netbird"]["name"] == self.whatismyhostname()
+
+        if hostname_changed :
+            message = {
+                    "type" : "host_update_message",
+                    "format" : "text",
+                    "content" : f"{self.whatismyhostname()}:{f.readlines()[1]}"
+                }
+            for i in self.ip_table.IPs():
+                self.Send(i , message=message)
+        f.close()
+
+
+
+        #Update settings
+        f = open("app/user/user_settings.json")
+        payload = json.load(f)
+        payload = payload["netbird"]
+        f.close()
+        id = self.whatismyid()
+
+        url = "https://api.netbird.io/api/peers/{}".format(id)
+        headers = {
+            "Content-Type" : "application/json" ,
+            "Accept" : "application/json",
+            "Authorization" : "Token {}".format(SERVICE_TOKEN)
+        }
+        response = requests.request("PUT" , url , headers=headers , data=payload)
+
+
+
+
+    def ChangeSetting(self , setting_name , setting_value , commit:bool = True):
+        '''Edit user settings'''
+        f = open('app/user/user_settings.json')
+        data = json.load(f)
+        f.close()
+
+        for i in data['netbird']:
+            for key in i :
+                if key == "id":
+                    data['netbird']['id'] = self.whatismyid()
+                if key == "name":
+                    data['netbird']['name'] = self.whatismyhostname()
+                if key == setting_name :
+                    data['netbird'][setting_name] = setting_value
+        
+        json.dump(data , open('app/user/user_settings.json' , "w"))
+
+        if commit :
+            self.CommitSettings()
+    
+
+
+
+
+    def Close(self):
+        self.handler_process.kill()
+        self.parent_process_sock.close()
+        exit()
+                
 if __name__ == '__main__':
-    while True:
-        ConnectionHandler()
+    import jdata
+
+    handler = ConnectionHandler()
+    message = jdata.Text_Message("This is another test")
+    handler.Send(handler.whatismyip() , message)
+    handler.ChangeSetting("name" , "uzairs_kali_machine")
+    handler.Close()
