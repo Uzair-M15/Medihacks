@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta title="Cura">
+        <meta name="description" content="Caring for our caregivers">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device.width, initial-scale=1.0">
+
+        <!--Font-->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        
+        
+        
+        
+        <style>
+            head{
+                padding-top : 0% ;
+                padding-left : 0% ;
+            }
+            body{
+                font-family : Montserrat;
+                font-size : 18px;
+            }
+            .row{
+                display : flex ;
+                width : 100% ;
+                height: 100% ;
+            }
+            .side-panel{
+                flex : 10%; 
+                height: 100%;
+                border-width : 10% ;
+                border-radius: 150px;
+                background-color: rgb(220, 226, 245);
+            }
+            .user-area{
+                flex : 90% ;
+                height:  100% ;
+                font-family :inherit;
+            }
+            .icon{
+                transform : scale(1 , 1);
+                width : 30%;
+                height: 30%;
+                padding-left : 30% ;
+                transition : padding-left 0.5s;
+            }
+            .icon:hover{
+                padding-left: 35%;
+            }
+            #home-icon{
+                margin-top : 150%; 
+            }
+            #send-icon{
+                margin-top : 50%;
+            }
+            #info-icon{
+                margin-top : 50%;
+                margin-bottom: 100% ;
+            }
+            .heading{
+                margin-bottom:5%;
+                margin-left:40%;
+                width:10%;
+                font-size:50px;
+                font-weight:500;
+                text-align: center;
+                color:#4357d7;
+                padding-top:1%;
+                padding-bottom:1%;
+                
+                background-color: #ffffff;
+                transition: color 0.5s , background-color 1s;
+
+                box-shadow: -10px 10px #78CDD7;
+                border-radius:200px;
+                border-style:groove;
+                border-right: 0px ;
+                border-top:0px;
+                border-width: 10px;
+            }
+            .heading:hover{
+                color: #ffffff;
+                background-color:#4357d7
+            }
+            .label{
+                border-radius: 15px;
+                background-color: #5967c5;
+                color:#ffffff;
+                text-align: center;
+                padding-left:2%;
+                padding-right:2%;
+                padding-top : 1%;
+                padding-bottom:1%;
+                margin-top:1%;
+                margin-bottom:1%;
+                margin-left:10%;
+                font-size:25px;
+                font-weight:500;
+
+            }
+            #properties{
+                font-size: 25px;
+                font-style:bold;
+                margin-left:30%
+            }
+            .box-border{
+                margin-top : 1%;
+                margin-left : 5%;
+                width:90%;
+                text-align: center;
+                color:#4357d7;
+                padding-top:1%;
+                padding-bottom:1%;
+                
+                background-color: #ffffff;
+
+                /** #78CDD7; **/
+                border-radius:200px;
+                border-color :#5967c5;
+                border-style:solid ;
+                border-width: 10px;
+
+                text-decoration: none;
+
+                display : flex;
+            }
+            .user-area{
+                padding-top : 5%;
+            }
+            .user-label{
+                margin-left: 1%;
+                width:5%;
+                padding-left:  1%;
+                padding-right: 1% ;
+                padding-top:2%;
+                padding-bottom:2%;
+                border-radius : 100px;
+                border-style : solid;
+                border-color:#5967c5 ;
+                background-color: #5967c5;
+                color:#ffffff ;
+                text-decoration: none;
+            }
+            .user-details{
+                margin-left : 1% ;
+                color : #5967c5 ;
+                padding-top:10px;
+                padding-bottom:10px;
+                text-decoration : none;
+            }
+
+
+
+        </style>
+
+        <body>
+            <div class="row">
+                <div class="side-panel">
+                    <a href="http://127.0.0.1:808/home"><img id="home-icon" class="icon" src="image/Home.png"></a>
+                    <a href="http://127.0.0.1:808/send"><img id="send-icon" class="icon" src="image/send.png"></a>
+                    <a href="http://127.0.0.1:808/info"><img id="info-icon" class="icon" src="image/info.png"></a>
+                </div>
+                <div class="user-area">
+                    <div class="heading" style="width:15%;">Users</div>
+                    <div class="panel">
+                        <!--{function-setup_send_page-}-->
+                    </div>
+                </div> 
+            </div>
+        </body>
+    </head>
+</html>

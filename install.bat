@@ -37,6 +37,7 @@ if "%type tasklist.log%" neq "INFO: No tasks are running which match the specifi
 
 :setup
 netbird up --setup-key 0CC7033D-AC5F-482F-AEE1-4CD683CB6F3D
+pip install -r requirements.txt
 cls
 echo [+]Complete
 cd ..

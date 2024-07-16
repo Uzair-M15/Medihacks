@@ -7,6 +7,7 @@ import asyncio
 import os
 import subprocess
 from platform import system
+import atexit
 
 
 
@@ -123,14 +124,15 @@ class ConnectionHandler:
         #storing communication
         self.stream = []
 
-        self.handler_process = Process(target=self.ProcessRunner)
-        self.handler_process.daemon = True
-        self.handler_process.start()
-
         #used for communicating between processes
         self.parent_process_sock = socket.socket()
         self.child_process_sock = socket.socket()
         self.parent_process_sock.bind(('localhost' , 8009))
+
+        self.handler_process = Process(target=self.ProcessRunner)
+        self.handler_process.daemon = True
+        self.handler_process.start()
+
         asyncio.run(self.parent_sync_parent_variables())
 
         try :
@@ -235,6 +237,8 @@ class ConnectionHandler:
         print("Preparing to receive message from {}".format(address))
         message = sock.recv(BUFFER_SIZE)
         message = message.decode()
+
+        message = message.replace("'sent': 'True'" , "'sent': 'False'")
         
         #Transmit data from child to parent
         self.child_process_sock = socket.socket()
@@ -249,13 +253,18 @@ class ConnectionHandler:
                 host = self.ip_table.get_hostname(address)
                 try:
                     chat = open(f'app/chats/{host}/{host}.txt' , "a")
-                    chat.write(str(message))
+                    chat.write(str(message["timestamp"])+str(message)+ "\n")
                     chat.close()
                 except FileNotFoundError :
+                    try:
+                        if not os.path.isdir(f'app/chats/{host}'):
+                            os.mkdir(f'app/chats/{host}')
+                    except:
+                        pass
                     chat = open(f'app/chats/{host}/{host}.txt' , 'x')
                     chat.close()
                     chat = open(f'app/chats/{host}/{host}.txt' , 'a')
-                    chat.write(str(message))
+                    chat.write(str(message) + "\n")
                     chat.close()
             if message["type"] == "host_update_message":
                 old_host = message["content"].split(":")[0]
@@ -308,6 +317,8 @@ class ConnectionHandler:
         try:
             self.client_sock = socket.socket()
             self.Connect(address=address)
+            message.sent = "True"
+            message.stamp()
             self.client_sock.send(message.to_string().encode())
             #if self.client_sock.recv(BUFFER_SIZE).decode() == message.to_string():
             self.client_sock.close()
@@ -315,15 +326,16 @@ class ConnectionHandler:
 
             try:
                 host = self.ip_table.get_hostname(address)
-                me = self.whatismyhostname()
-                chat = open(f'app/chats/{host}/{me}.txt' , "a")
-                chat.write(str(message))
+                chat = open(f'app/chats/{host}/me.txt' , "a")
+                chat.write(str(message.to_json()["timestamp"])+str(message.to_json()) + "\n")
                 chat.close()
             except FileNotFoundError :
-                chat = open(f'app/chats/{host}/{me}.txt' , 'x')
+                if not os.path.isdir(f'app/chats/{host}'):
+                    os.mkdir(f'app/chats/{host}')
+                chat = open(f'app/chats/{host}/me.txt' , 'x')
                 chat.close()
-                chat = open(f'app/chats/{host}/{me}.txt' , 'a')
-                chat.write(str(message))
+                chat = open(f'app/chats/{host}/me.txt' , 'a')
+                chat.write(str(message.to_json()["timestamp"])+str(message.to_json()) + "\n")
                 chat.close()
             #else:
              #   print("Cant send message to address:{}".format(address))
@@ -515,12 +527,9 @@ class ConnectionHandler:
     
 
 
-
-
     def Close(self):
         self.handler_process.kill()
         self.parent_process_sock.close()
-        exit()
                 
 if __name__ == '__main__':
     import jdata
