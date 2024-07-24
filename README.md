@@ -4,13 +4,13 @@ Welcome to Cura. A social platform wherein we provide not just social interactio
 # Why 
 This application was developed for the medihacks 2024 hackathon
 
-# Who would dare make such a thing\
+# Who would dare make such a thing
 This program is the amalgamation of self-hate, tenacity, intrigue, a week of sleepless nights and caffeine.\
 Developed by:\
   -Uzair Mahomed (multiprocessing, networking and socket programming)\
   -Abdur-Rahman Kaka (algorithms for message handling, file handling and io)\
   -Yaseen Khan (UI and UX)\
-  -Sevan Govender (visual components)\
+  -Sevan Govender (visual components)
 
 # How does it work
 The program uses netbird to communicate with other computers over the internet (Read more about netbird at app.netbird.io). Firstly the install script installs netbird and connect the user to the netbird network and starts the netbird service. To start the application run CuraHTTP.py (Windows users need to workaround the maximum allowed sockets.See bugs). The user will then be prompted to open their browser and navigate to http://127.0.0.1:808/home. This will only happen if the user is authenticated with the netbird virtual LAN. The scripts creates a netb.ConnectionHandler object to asynchronously send and receive messages using both the builtin asyncio and multiprocessing libraries. The webpages are then generated dynamically by the template.load method. This is done by resolving templates for requests depending on the nature of the requests. To achieve this we developed our own basic backend framework which computes the outputs of "nests". These nests can call methods and variables stored in the definitions module so long as it is present in the definitions.namespace dictionary.
