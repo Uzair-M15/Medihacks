@@ -18,7 +18,7 @@ import atexit
 ip_table = None
 PORT= 8008
 BUFFER_SIZE = 4096
-SERVICE_TOKEN = 'nbp_uhFD8nKYULoPNz6WZlKoY34LxRBv9B0nt3Fv'
+SERVICE_TOKEN = 'Get a service token from netbird.io'
 
 
 
